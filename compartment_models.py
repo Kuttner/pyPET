@@ -12,7 +12,7 @@ def oneTCM(t, Cp, Ct, UNITS='s',INIT = (0.5, 0.035, 0.05)):
     t : TYPE
         DESCRIPTION.
     Cp : TYPE
-        DESCRIPTION.
+        DESCRIPTION. 
     Ct : TYPE
         DESCRIPTION.
     UNITS : TYPE, optional
