@@ -3,6 +3,10 @@ from scipy.optimize import curve_fit
 from scipy import stats
 
 
+def mse_func(a, b):
+    return np.sqrt(np.sum((a - b) ** 2))
+
+
 def interpolate_time_frames(C_A, t_A, C_B, t_B, frame_length):
     # Interpolate C_A and C_B to uniform time frames of frame_length [s]
     # Make them equally long by shortening the longest one
@@ -69,8 +73,8 @@ def oneTCM(Cp, t_p, Ct, t_t=0, INTERPOLATE=True, TIME_FRAMES=1):
     return K_fit[0], fit
 
 
-# %% Two tissue compartment model
-def twoTCM(Cp, t_p, Ct, t_t=0, INTERPOLATE=True, TIME_FRAMES=2.5):
+# %% Irreversible two tissue compartment model (k4=0)
+def twoTCMirrev(Cp, t_p, Ct, t_t=0, INTERPOLATE=True, TIME_FRAMES=2.5):
 
     # Set negative and small positive values to zero in Cp:
     Cp[Cp < 10e-5] = 0
@@ -126,13 +130,13 @@ def twoTCM(Cp, t_p, Ct, t_t=0, INTERPOLATE=True, TIME_FRAMES=2.5):
     fit_int = CM_vB((Cp_int, t_int), K_fit[0][0], K_fit[0][1], K_fit[0][2], K_fit[0][3])
 
     # Interpolate back to original spacing
-    fit = np.interp(t_p / 60, t_int, fit_int)
+    fit = np.interp(t_p, t_int, fit_int)
 
     # Calculate net influx rate constant
     Ki = K_fit[0][0] * K_fit[0][3] / (K_fit[0][1] + K_fit[0][3])
 
     # K_fit_pred = curve_fit(CM_vB, (Cp_pred_int, t_int), Ct_int, method='trf', bounds=(0, 10), p0=K_init)
-    return K_fit[0], Ki, fit
+    return K_fit[0], Ki, fit, mse_func(Ct_int, fit_int)
 
 
 # %% Reversible two tissue compartment model
@@ -187,7 +191,7 @@ def twoTCMrev(Cp, t_p, Ct, t_t=0, INTERPOLATE=True, TIME_FRAMES=2.5):
     Ki = K_fit[0][0] * K_fit[0][3] / (K_fit[0][1] + K_fit[0][3])
 
     # K_fit_pred = curve_fit(CM_vB, (Cp_pred_int, t_int), Ct_int, method='trf', bounds=(0, 10), p0=K_init)
-    return K_fit[0], Ki, fit
+    return K_fit[0], Ki, fit, mse_func(Ct_int, fit_int)
 
 
 # %%
@@ -248,16 +252,6 @@ def patlak(Cp, t_p, Ct, t_t=0, INTERPOLATE=True, TIME_FRAMES=2.5):
     # timesteps = 1440  # Interpolate to uniform time frames of approx 2.5s
     divisor = 6  # Search for the optimal break point between the two linear curves from t=0 to t=1/divisor of the maximum time. For instnace, if divisor=6, then it searches within first 10 minutes for a 60 minute scan.
 
-    ####### Use these for manual plotting #######
-    # i = 13
-    # # i+=1
-    # print(i)
-    # j = 0
-    # Cp = Y[i]
-    # Ct = D[i, VOIs_analyze[j]]
-    # tmax = 34
-    ##############################################
-
     # Set negative and small positive values to zero in Cp:
     Cp[Cp < 10e-5] = 0
 
@@ -307,7 +301,6 @@ def patlak(Cp, t_p, Ct, t_t=0, INTERPOLATE=True, TIME_FRAMES=2.5):
     # Limit the search between the second time point and the first 10 minutes (1/6th of the time points)
 
     for t_b in range(2, int(len(newX) / divisor)):
-
         # Fit first part of curve (0->t_b)
         newX1 = newX[0:t_b]
         newY1 = newY[0:t_b]
@@ -332,12 +325,11 @@ def patlak(Cp, t_p, Ct, t_t=0, INTERPOLATE=True, TIME_FRAMES=2.5):
             intercept1_final = intercept1
             slope2_final = slope2
             intercept2_final = intercept2
-
             mse_final = mse
+    # # Optional plotting:
 
-    # Optional plotting:
-    # plt.plot(t[0:tmax], Cp[0:tmax])
-    # plt.plot(t[0:tmax], Ct[0:tmax])
+    # plt.plot(t_int[0:tmax], Cp[0:tmax])
+    # plt.plot(t_int[0:tmax], Ct[0:tmax])
     # plt.show()
 
     # Plot the final model with the two model fits.
