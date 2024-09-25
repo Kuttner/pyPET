@@ -67,10 +67,10 @@ def oneTCM(Cp, t_p, Ct, t_t=0, INTERPOLATE=True, TIME_FRAMES=1):
     fit_int = CM_vB((Cp_int, t_int), K_fit[0][0], K_fit[0][1], K_fit[0][2])
 
     # Interpolate back to original spacing
-    fit = np.interp(t_p / 60, t_int, fit_int)
+    fit = np.interp(t_p, t_int, fit_int)
 
     # K_fit_pred = curve_fit(CM_vB, (Cp_pred_int, t_int), Ct_int, method='trf', bounds=(0, 10), p0=K_init)
-    return K_fit[0], fit
+    return K_fit[0], fit, mse_func(Ct_int, fit_int)
 
 
 # %% Irreversible two tissue compartment model (k4=0)
