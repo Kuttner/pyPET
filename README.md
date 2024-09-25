@@ -1,8 +1,16 @@
 # pyPET - A Python library for the analysis of positron emission tomography (PET) data
 
-Samuel Kuttner. 2024-09-25
+Author: 
+
+Samuel Kuttner<sup>1,2</sup>, PhD, Medical Physicist
+
+<sup>1</sup>PET Imaging Center, University Hospital of North Norway
+
+<sup>2</sup>UiT Machine Learning Group, Department of Physics and Technology, UiT The Arctic University of Norway
 
 samuel.kuttner@uit.no
+
+[Google Scholar](https://scholar.google.se/citations?hl=en&user=AFVmH7AAAAAJ&view_op=list_works&sortby=pubdate)
 
 ## Background
 Positron emission tomography (PET) is a medical imaging technique for sampling the three dimensional spatial and temporal distribution of an intravenously injected radioactive tracer in a patient. 
