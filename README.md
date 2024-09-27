@@ -25,12 +25,14 @@ Such measures are not possible to derive from a static PET image.
 Tracer kinetic modeling requires at least one tissue curve and and an arterial input function (AIF). 
 This Python library contains scripts, data and an example notebook to perform tracer kinetic modeling for dynamic PET data.
 
+Voxel-wise (parametric) implementation for the Patlak model using least squares estimation is included, as well as a for-loop-based implementation voxel-wise Two-tissue reversible compartment model (very slow).
+
 ## Aim
 The purpose of this library is to provide scripts that perform tracer kinetic modeling in Python using. The library contains code for the following compartment models:
 - One-tissue compartment model [1]
 - Two-tissue irreversible compartment model [1]
-- Two-tissue reversible compartment model [1]
-- Patlak graphical analysis [2]
+- Two-tissue reversible compartment model (regional and voxe-wise (parametric)) [1]
+- Patlak graphical analysis (regional and voxe-wise (parametric)) [2]
 
 ## Requirments
 You can work either using your local standard Python installation, or by using for example Google Colabs.

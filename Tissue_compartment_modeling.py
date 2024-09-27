@@ -194,6 +194,60 @@ def twoTCMrev(Cp, t_p, Ct, t_t=0, INTERPOLATE=True, TIME_FRAMES=2.5):
     return K_fit[0], Ki, fit, mse_func(Ct_int, fit_int)
 
 
+# %% Parametric (voxel-wise) reversible two-tissue compartment model (brute force method using a for loop)
+def param_twoTCMrev(Cp, img, t_p, INTERPOLATE=True, TIME_FRAMES=2.5, num_samples=100):
+    """
+    Parametric (Voxel-wise) PET Reversible two tissue compartment model
+    Input:  Cp,                     Plasma time-activity curve
+            img,                    Dynamic PET image containing all voxel tissue time-activity curves
+            t_p,                    Time vector for plasma curve in seconds
+            INTERPOLATE,            Perform interpolation or not. Default is 2.5 second frames. Call with False if interpolation is done outslide this function.
+
+    Output: img_Ki,                 Parametric image of net influxes, obtained as the slope of the least squares linear fit of the steady-state part of the plot in the transformed space.
+            img_V0,                 Parametric image of initial volumes of distribution, obtained as the y-axis crossing from the same fit as Ki
+
+    """
+    np.random.seed(42)
+    # Flatten the spatial dimensions of img for processing
+    tissue_curves = img.reshape(img.shape[0], -1).T  # Vectorized operation
+
+    # Pre-allocate arrays for parameters
+    num_voxels = tissue_curves.shape[0]
+    num_params = 5  # K1, k2, vB, k3, k4
+    params = np.zeros((num_samples, num_params))
+    Kis = np.zeros(num_samples)
+
+    # Vectorized check to eliminate low-mean voxels upfront
+    valid_voxels = np.mean(tissue_curves, axis=1) >= 0.2
+    valid_indices = np.where(valid_voxels)[0]
+
+    sampled_indices = np.random.choice(valid_indices, size=num_samples, replace=False)
+    valid_indices = sampled_indices
+
+    # Process only valid voxels
+    for idx, i in enumerate(valid_indices):
+        (K1, k2, vB, k3, k4), Ki, _ = twoTCMrev(
+            Cp,
+            t_p,
+            tissue_curves[i, :],
+            INTERPOLATE=INTERPOLATE,
+            TIME_FRAMES=TIME_FRAMES,
+        )
+
+        params[idx] = K1, k2, vB, k3, k4
+        Kis[idx] = Ki
+
+    param_images = {
+        "Ki": Kis,  # Directly use Kis array
+        "K1": params[:, 0],  # First column for K1
+        "k2": params[:, 1],  # Second column for k2
+        "vB": params[:, 2],  # Third column for vB
+        "k3": params[:, 3],  # Fourth column for k3
+        "k4": params[:, 4],  # Fifth column for k4
+    }
+    return param_images
+
+
 # %%
 def CM_vB_wrap(how_many_k=2):
     def CM_vB(X, K1, k2, vB, *args):
@@ -342,3 +396,157 @@ def patlak(Cp, t_p, Ct, t_t=0, INTERPOLATE=True, TIME_FRAMES=2.5):
     # print(slope2_final)
 
     return slope2_final, intercept2_final
+
+
+# %% Parametric (voxel-wise) PET Patlak model (lest squares method)
+def param_patlak(
+    Cp,
+    t_p,
+    img,
+    t_t=0,
+    INTERPOLATE=True,
+    TIME_FRAMES=2.5,
+    OPTIMIZE_BREAKPOINT=False,
+    BREAKPOINT=10,
+):
+    """
+    Parametric (Voxel-wise) PET Patlak modeling using least squares method
+    Input:  Cp,                     Plasma time-activity curve
+            img,                    Dynamic PET image containing all voxel tissue time-activity curves
+            t_p,                    Time vector for plasma curve in seconds
+            t_t,                    Time vector for PET image (img) in seconds. If none, it equals t_p
+            INTERPOLATE,            Perform interpolation or not. Default is 2.5 second frames. Call with False if interpolation is done outslide this function.
+            BREAKPOINT,             Breakpoint in minutes. If set to a value > 0, the break point is fixed to this value. If set to 0, the break point is optimized.
+            OPTIMIZE_BREAKPOINT,    If True, the break point is fixed to the value of BREAKPOINT. If False, the break point is optimized.
+    Output: img_Ki,                 Parametric image of net influxes, obtained as the slope of the least squares linear fit of the steady-state part of the plot in the transformed space.
+            img_V0,                 Parametric image of initial volumes of distribution, obtained as the y-axis crossing from the same fit as Ki
+
+    """
+
+    # Set negative and small positive values to zero in Cp:
+    Cp[Cp < 10e-5] = 0
+
+    # If t_t is not passed, assume it equals t_p
+    if np.sum(t_t) == 0:
+        t_t = t_p
+
+    # Reshape img to 2D array
+    img_2D = np.reshape(
+        img, (img.shape[0], img.shape[1] * img.shape[2] * img.shape[3])
+    ).T
+
+    # Interpolate img_2D to uniform time framing of TIME_FRAMES [s]
+    img_int = []
+    if INTERPOLATE:
+        for i in range(img_2D.shape[0]):
+            Cp_int, img_int_temp, t_int = interpolate_time_frames(
+                Cp, t_p, img_2D[i], t_t, TIME_FRAMES
+            )
+            img_int.append(img_int_temp)
+        img_int = np.array(img_int)
+    else:
+        t_int = t_p
+        Cp_int = Cp
+        img_int = img_2D
+
+    # Convert to minutes
+    t_int = t_int / 60
+
+    def integrate(C, dt):
+        return np.cumsum(C * dt)
+
+    def zero_divide(a, b):
+        return np.divide(a, b, out=np.zeros_like(a), where=b != 0)
+
+    def mse_func(a, b):
+        return np.sqrt(np.sum((a - b) ** 2))
+
+    def sse_func(a, b):
+        return np.sum(((a - b) ** 2), axis=1)
+
+    dt = t_int[2] - t_int[1]  # time framing in minutes
+
+    # Create the new axes (normalized time)
+    newX = zero_divide(integrate(Cp_int, dt), Cp_int)
+
+    newY = zero_divide(img_int, Cp_int)
+
+    # Find index of breakpoint in t_int
+    t_b_idx = np.argmin(np.abs(t_int - BREAKPOINT))
+    t_min_idx = (
+        10  # Must use 4 as minimum index to avoid division by zero in least squares fit
+    )
+
+    if OPTIMIZE_BREAKPOINT:
+        round(t_int[t_b_idx], 2)
+        sse_list = []
+        result1_list = []
+        result2_list = []
+
+        for t_idx in range(t_min_idx, t_b_idx):
+            print(f"{t_idx}/{t_b_idx}")
+
+            # Fit first part of curve (0->t_idx)
+            newX1 = newX[0:t_idx]
+            newY1 = newY[:, 0:t_idx]
+            newX1 = np.vstack([newX1, np.ones_like(newX1)])
+            result1 = np.dot(
+                inv(np.dot(newX1, newX1.T)), np.dot(newX1, newY1.T)
+            ).T  # Result is [slope, intercept]
+            model1 = np.dot(result1, newX1)
+            sse1 = sse_func(model1, newY1)
+
+            # Fit second part of curve (t_idx->end)
+            newX2 = newX[t_idx:]
+            newY2 = newY[:, t_idx:]
+            newX2 = np.vstack([newX2, np.ones_like(newX2)])
+            result2 = np.dot(
+                inv(np.dot(newX2, newX2.T)), np.dot(newX2, newY2.T)
+            ).T  # Result is [slope, intercept]
+            model2 = np.dot(result2, newX2)
+            sse2 = sse_func(model2, newY2)
+
+            # Append combined SSE and results
+            sse_list.append(sse1 + sse2)
+            result1_list.append(result1)
+            result2_list.append(result2)
+
+        sse_list = np.array(sse_list)
+        result1_list = np.array(result1_list)
+        result2_list = np.array(result2_list)
+
+        # Find minimum SSE for each voxel
+        min_sse_idx = np.argmin(sse_list, axis=0, keepdims=True)
+
+        # Add new axis to min_sse_idx to be able to use np.take_along_axis
+        min_sse_idx = min_sse_idx[..., np.newaxis]
+
+        # Choose the best fit for each voxel based on the minimum SSE using np.take_along_axis
+        result1_bestfit = np.take_along_axis(result1_list, min_sse_idx, axis=0)
+        result2_bestfit = np.take_along_axis(result2_list, min_sse_idx, axis=0)
+
+        # Extract Ki as slope and V0 as intercept for each voxel
+        Ki = result2_bestfit[:, :, 0].squeeze()
+        V0 = result2_bestfit[:, :, 1].squeeze()
+
+    else:
+        # Use fixed BREAKPOINT
+        # print("Using fixed breakpoint of " + str(BREAKPOINT) + " minutes.")
+
+        # Fit second part of curve (t_b->end)
+        newX2 = newX[t_b_idx:]
+        newY2 = newY[:, t_b_idx:]
+        newX2 = np.vstack([newX2, np.ones_like(newX2)])
+        result2 = np.dot(
+            inv(np.dot(newX2, newX2.T)), np.dot(newX2, newY2.T)
+        ).T  # Result is [slope, intercept]
+
+        # Extract Ki as slope and V0 as intercept for each voxel
+        Ki = result2[:, 0]
+        V0 = result2[:, 1]
+
+    # Reshape to parametric 3D images
+    img_Ki = np.reshape(Ki, (img.shape[1], img.shape[2], img.shape[3]))
+    img_V0 = np.reshape(V0, (img.shape[1], img.shape[2], img.shape[3]))
+
+    return img_Ki, img_V0
