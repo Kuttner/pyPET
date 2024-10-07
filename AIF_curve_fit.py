@@ -8,9 +8,6 @@ from scipy import stats
 from scipy.odr import Model, Data, ODR
 
 
-# AIF reproducibility
-
-
 def AIF_fit(
     t,
     AIFm,
@@ -45,7 +42,7 @@ def AIF_fit(
     if np.max(t) > 60:
         t = t / 60
 
-    #%% Fit the measured AIF: AIFm
+    # %% Fit the measured AIF: AIFm
     # params_init = [0, 141, 0.296, 0.259, -27, -0.55, -0.04]
     params_init = [0.975, 80.26, 1, 2.18, -5.235, -0.071, -0.189]
     llim = [0, 0, 0, 0, -100, -1, -1]
@@ -66,7 +63,7 @@ def AIF_fit(
     AIFm_fit = feng_aif(t, TAUm, A1m, A2m, A3m, L1m, L2m, L3m)
     r2m = r_squared(AIFm, AIFm_fit)
 
-    #%% Find the undispersed input function: AIFu
+    # %% Find the undispersed input function: AIFu
     # Use same limits and initial conditions, but add for TAUd.
     initTAUd = 0.12
     llimTAUd = 0
@@ -93,7 +90,7 @@ def AIF_fit(
     AIFd = AIFd_fcn(t, TAUu, A1u, A2u, A3u, L1u, L2u, L3u, TAUd)
     r2u = r_squared(AIFm, AIFd)
 
-    #%% Plot
+    # %% Plot
     X_axis = (3000, 300)
     fig, ax = plt.subplots(figsize=(10, 7))
     for idx, t_max in enumerate(X_axis):
@@ -126,7 +123,7 @@ def AIF_fit(
             bbox_inches="tight",
         )
 
-    #%% Save csv file with corrected data
+    # %% Save csv file with corrected data
     if SAVE_CSV:
         save_path = SAVE_PATH + "_PY_disp_corr.csv"
         df2 = pd.DataFrame(
@@ -146,7 +143,7 @@ def AIF_fit(
         return AIFm_fit, AIFu
 
 
-#%%
+# %%
 def AIF_fit_weights_disp(
     t,
     AIFm,
@@ -198,7 +195,7 @@ def AIF_fit_weights_disp(
     if np.max(t) > 60:
         t = t / 60
 
-    #%% Fit the measured AIF: AIFm
+    # %% Fit the measured AIF: AIFm
     # params_init = [0, 141, 0.296, 0.259, -27, -0.55, -0.04]
     params_init = [0.975, 80.26, 1, 2.18, -5.235, -0.071, -0.189]
     llim = [0, 0, 0, 0, -100, -1, -1]
@@ -218,7 +215,7 @@ def AIF_fit_weights_disp(
             method="trf",
             bounds=(llim, ulim),
             p0=params_init,
-            maxfev=2 ** 14,
+            maxfev=2**14,
             full_output=True,
         )
         # print(AIFm_fit_params)
@@ -233,7 +230,7 @@ def AIF_fit_weights_disp(
     optimal_n = np.argmin(J_max)
     AIFm_fit_params_optimal = AIFm_fit_params_list[optimal_n]
     AIFm_fit_optimal = AIFm_fit_list[optimal_n]
-    #%% Find the undispersed input function: AIFu
+    # %% Find the undispersed input function: AIFu
     # Use same limits and initial conditions, but add for TAUd.
     initTAUd = 0.12
     llimTAUd = 0
@@ -258,7 +255,7 @@ def AIF_fit_weights_disp(
             method="trf",
             bounds=(llim, ulim),
             p0=params_init,
-            maxfev=2 ** 14,
+            maxfev=2**14,
             full_output=True,
         )
 
@@ -290,8 +287,8 @@ def AIF_fit_weights_disp(
     AIFd_optimal = AIFd_fcn(
         t, TAUdopt, A1dopt, A2dopt, A3dopt, L1dopt, L2dopt, L3dopt, TAUdopt
     )
-    # CONTINUE HERE ()
-    #%% Plot
+
+    # %% Plot
     X_axis = (3000, 300)
     fig, ax = plt.subplots(figsize=(10, 7))
     for idx, t_max in enumerate(X_axis):
@@ -324,7 +321,7 @@ def AIF_fit_weights_disp(
             bbox_inches="tight",
         )
 
-    #%% Save csv file with corrected data
+    # %% Save csv file with corrected data
     if SAVE_CSV:
         save_path = SAVE_PATH + "_PY_disp_corr.csv"
         df2 = pd.DataFrame(
@@ -344,7 +341,7 @@ def AIF_fit_weights_disp(
         return AIFm_fit_optimal, AIFu_optimal
 
 
-#%% AIF fit with weights
+# %% AIF fit with weights
 
 
 def AIF_fit_weights(t, AIFm, INTERPOLATE=False, TIME_FRAMES=1):
@@ -413,7 +410,7 @@ def AIF_fit_weights(t, AIFm, INTERPOLATE=False, TIME_FRAMES=1):
             method="trf",
             bounds=(llim, ulim),
             p0=params_init,
-            maxfev=2 ** 14,
+            maxfev=2**14,
             full_output=True,
         )
         AIFfit_params_list.append(AIFm_fit_params)
@@ -435,7 +432,7 @@ def AIF_fit_weights(t, AIFm, INTERPOLATE=False, TIME_FRAMES=1):
         return AIFm_fit_optimal, AIFfit_params_optimal
 
 
-#%% Supporting functions
+# %% Supporting functions
 def feng_aif(t, TAU, A1, A2, A3, L1, L2, L3):
     # Check if time vector could be in seconds, then convert to minutes
     if np.max(t) > 60:
@@ -495,14 +492,14 @@ def interpolate_time_frames(C_A, t_A, C_B, t_B, frame_length):
     return C_A_int, C_B_int, t_int
 
 
-#%%
+# %%
 def find_nearest(array, value):
     array = np.asarray(array)
     idx = (np.abs(array - value)).argmin()
     return idx
 
 
-#%%
+# %%
 def auc_peak_tail(t, y, t_min, t_break):
     """
     Calculates AUC under peak (t=t_min:t_break) and tail (t=t_break:) as tuple for vector y with time steps t.
@@ -512,7 +509,7 @@ def auc_peak_tail(t, y, t_min, t_break):
     return auc_peak, auc_tail
 
 
-#%% Input function feature extraction
+# %% Input function feature extraction
 
 
 def IF_feature_extract(
@@ -533,13 +530,13 @@ def IF_feature_extract(
 
     features = {}
 
-    #% Peak value [UNITS]
+    # % Peak value [UNITS]
     peak = np.max(IF_A)
 
-    #% Time to peak (ttp) [s]
+    # % Time to peak (ttp) [s]
     ttp = IF_t[np.argmax(IF_A)] * 60
 
-    #% Area under peak and tail. Must start and breakpoint.
+    # % Area under peak and tail. Must start and breakpoint.
 
     # For IDIF (with only 41 time frames), we must interpolate to uniform spacing
     if len(IF_t) < 50:
@@ -588,7 +585,7 @@ def IF_feature_extract(
 
     auc_peak_tail_ratio = auc_peak / auc_tail
 
-    #% FWHM of peak
+    # % FWHM of peak
     fwhm_start = find_nearest(IF_A[:max_idx], IF_A_max / 2)
     fwhm_end = find_nearest(IF_A[max_idx:peak_end2], IF_A_max / 2) + max_idx
 
@@ -612,7 +609,7 @@ def IF_feature_extract(
         "AUC ratio": "[1/1]",
     }
 
-    #%% Plot AUC curves
+    # %% Plot AUC curves
     if DO_PLOT:
 
         YMIN = -1.5
@@ -703,7 +700,7 @@ def IF_feature_extract(
         return features, units
 
 
-#%% Orthogonal regression function. From:
+# %% Orthogonal regression function. From:
 #   http://blog.rtwilson.com/orthogonal-distance-regression-in-python/
 
 
@@ -733,7 +730,7 @@ def orthoregress(x, y):
     return list(out.beta)
 
 
-#%% Scatterplot
+# %% Scatterplot
 def scatterplot(
     y,
     Y,
@@ -917,179 +914,3 @@ def scatterplot(
     plt.show()
 
     return fig, corrcoef1
-
-
-#%% Crop image function
-# Crops original image into LabPET8 or LABPET4 sizes, suitable for DLIF training
-
-
-def crop_image(I, LABPET4CROP, FULL_Z=False):
-    # FULL_Z: If True, crop to full z-dimension. If False, crop to dimension given by dims below.
-
-    # Define some hyperparameters
-    z_buffer = 5  # Number of buffer pixels above bladder or head in z-direction
-    z_buffer_LabPET4 = 20  # Number of buffer pixels above head in z-direction
-    y_buffer = 2  # Number of buffer pixels above bladder in y-direction
-    thresh = 0.3  # Threshold for bladder segmentation
-
-    # LABPET4CROP = False
-    if LABPET4CROP:
-        dims = (64, 48, 48)  # Dimensions x/y/z of desired crop LabPET4
-    else:
-        dims = (96, 48, 48)  # Dimensions x/y/z of desired crop LabPET8
-        # dims = (128, 48, 48)  # Dimensions x/y/z of desired crop LabPET8
-        # dims = (128, 64, 64)  # Dimensions x/y/z of desired crop LabPET8
-    plot_output = 1  # Plot result to console or not
-    INCLUDE_BLADDER = False
-
-    #%% LabPET4 cropping
-
-    if LABPET4CROP:
-        #% Crop (42,128,120,120) -> (42,64,48,48)
-
-        I_crp = np.zeros((len(I), dims[0], dims[1], dims[2]))
-        
-        # Binarize image to 1% of max.
-        center = [0] * 2
-
-        # Axis 1 & 2, crop with center of mouse body
-        for axs in range(1, 3):
-            # print(axs)
-
-            # Start in slice 30 to exclude bladder
-            maxproj = np.max(I[-1, 30:], axis=axs)
-            maxval = np.max(maxproj)  # Maxiumum value
-            maxproj_bw = maxproj > 0.01 * maxval
-            # plt.imshow(maxproj_bw)
-            # plt.show()
-
-            # Extract center coordinate of central slice in bw image
-            central_slice = int(maxproj_bw.shape[0] / 2)
-
-            first = np.min(np.where(maxproj_bw[central_slice]))
-            last = np.max(np.where(maxproj_bw[central_slice]))
-
-            center[axs - 1] = int((last - first) / 2 + first)
-
-        # Crop image to 64 slices, starting from the head. z_crop is a buffer from the head.
-
-        z_end = I.shape[1] - z_buffer_LabPET4
-        z_start = z_end - dims[0]
-        I_crp[:, :, :] = I[
-            :,
-            z_start:z_end,
-            center[1] - int(dims[2] / 2) : center[1] + int(dims[2] / 2),
-            center[0] - int(dims[1] / 2) : center[0] + int(dims[1] / 2),
-        ]
-
-        # plt.imshow(np.max(I_crp[-1], axis=1), vmax=5)
-        # plt.show()
-        # plt.imshow(np.max(I_crp[-1], axis=2), vmax=5)
-        # plt.show()
-    #%% LabPET8 cropping
-    else:
-        #% Crop (42,128,120,120) -> (42,96,48,48)
-        # I_lst = I[-1].squeeze()
-
-        # Threshold: thresh % of max. Only look on top part of the image
-        I_bladder = np.where(I[-1, 0:40] > np.max(I[-1, 0:40]) * thresh, 1, 0)
-
-        # plt.imshow(np.max(I[-1,0:40],axis=1))
-        # plt.imshow(np.max(I_bladder,axis=1))
-
-        # Only keep the largest connected component
-        I_bladder = getLargestCC(I_bladder)
-
-        # Store the minimum of the crop coordinates here
-        crp_coord = np.zeros(3).astype(int)
-
-        if INCLUDE_BLADDER:
-            # Find top coordinate of the bladder along z-direction (axis 0). Subtract the top buffer.
-            crp_coord[0] = (
-                np.min(np.nonzero(np.max(np.max(I_bladder, axis=2), axis=1))) - z_buffer
-            )
-        else:
-            # Find bottom coordinate of the bladder along z-direction (axis 0). Add the top buffer.
-            crp_coord[0] = (
-                np.max(np.nonzero(np.max(np.max(I_bladder, axis=2), axis=1))) + z_buffer
-            )
-
-        # Assign to zero if coordinate ends up as negative.
-        if FULL_Z:
-            crp_coord[0] = 0
-        else:
-            crp_coord[0] = max(crp_coord[0], 0)
-
-        # Find center of bladder in along axis 1 (x):
-        ax1 = 1
-        ax2 = 0
-
-        # First element of bladder in x direction
-        x_min = np.min(np.nonzero(np.max(np.max(I_bladder, axis=ax1), axis=ax2)))
-
-        # Total number of elements in bladder in x direction
-        x_tot = np.sum(np.max(np.max(I_bladder, axis=ax1), axis=ax2))
-
-        # Assign to zero if coordinate ends up as negative.
-        crp_coord[1] = max(x_min + np.round(x_tot / 2, 0), 0)
-
-        # Find minimum value along axis 2 (y):
-        # First element of bladder in x direction
-        ax1 = 2
-        ax2 = 0
-
-        # Assign to zero if coordinate ends up as negative.
-        x_min = (
-            np.min(np.nonzero(np.max(np.max(I_bladder, axis=ax1), axis=ax2))) - y_buffer
-        )
-        crp_coord[2] = max(x_min, 0)
-
-        # Assign to dims[2]/2 = 24 if < 24
-        if crp_coord[2] < dims[2] / 2:
-            crp_coord[2] = int(dims[2] / 2)
-
-        # Perform cropping. Note that z is the first axis in I.
-        I_crp_raw = I[
-            :,
-            crp_coord[0] : crp_coord[0] + dims[0],
-            crp_coord[2]
-            - np.round(dims[2] / 2, 0).astype(int) : crp_coord[2]
-            + np.round(dims[2] / 2, 0).astype(int),
-            crp_coord[1]
-            - np.round(dims[1] / 2, 0).astype(int) : crp_coord[1]
-            + np.round(dims[1] / 2, 0).astype(int),
-        ]
-
-        # Zero pad anterior to the brain.
-        I_crp = np.zeros((I_crp_raw.shape[0], dims[0], dims[1], dims[2]))
-
-        I_crp[:, 0 : I_crp_raw.shape[1]] = I_crp_raw
-
-    #%% Check dimensions of each image
-    if I_crp[-1].shape != dims:
-        dim_str = "DIMENSION ERROR"
-    else:
-        dim_str = ""
-
-    #%% Plot the two views to check that it all went alright
-    if plot_output == 1:
-        plt.subplot(1, 2, 1)
-        plt.imshow(np.max(I_crp[-1], axis=1), vmax=3)
-        plt.subplot(1, 2, 2)
-        plt.imshow(np.max(I_crp[-1], axis=2), vmax=3)
-        plt.show()
-    else:
-        print(dim_str)
-
-    return I_crp
-
-
-#%% Return the largest connected component
-from skimage.measure import label
-
-
-def getLargestCC(segmentation):
-    labels = label(segmentation)
-    assert labels.max() != 0  # assume at least 1 CC
-    largestCC = labels == np.argmax(np.bincount(labels.flat)[1:]) + 1
-    return largestCC
