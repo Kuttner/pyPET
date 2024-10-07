@@ -34,6 +34,8 @@ The purpose of this library is to provide scripts that perform tracer kinetic mo
 - Two-tissue reversible compartment model (regional and voxe-wise (parametric)) [1]
 - Patlak graphical analysis (regional and voxe-wise (parametric)) [2]
 
+In addition, for visualization purposes, the commonly used Feng parametric AIF model [3] is included.
+
 ## Requirments
 You can work either using your local standard Python installation, or by using for example Google Colabs.
 
@@ -55,6 +57,8 @@ If you use code from this repository in your academic research or in publication
 1. Gunn, R. N., Gunn, S. R., & Cunningham, V. J. (2001). Positron emission tomography compartmental models. Journal of Cerebral Blood Flow and Metabolism : Official Journal of the International Society of Cerebral Blood Flow and Metabolism, 21(6), 635–652. https://doi.org/10.1097/00004647-200106000-00002
 
 2. Patlak, C. S., & Blasberg, R. G. (1985). Graphical evaluation of blood-to-brain transfer constants from multiple-time uptake data. Generalizations. Journal of Cerebral Blood Flow and Metabolism : Official Journal of the International Society of Cerebral Blood Flow and Metabolism, 5(4), 584–590. https://doi.org/10.1038/jcbfm.1985.87
+
+3. Feng, D., Huang, S. C., & Wang, X. (1993). Models for computer simulation studies of input functions for tracer kinetic modeling with positron emission tomography. International Journal of Bio-Medical Computing, 32(2), 95–110. https://doi.org/10.1016/0020-7101(93)90049-C
 
 ## License
 
