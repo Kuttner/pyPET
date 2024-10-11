@@ -387,6 +387,7 @@ def AIF_fit_weights(t, AIFm, INTERPOLATE=False, TIME_FRAMES=1):
         AIFm, _, t_int = interpolate_time_frames(
             AIFm, t * 60, AIFm, t * 60, TIME_FRAMES
         )
+        t_org = t
         t = t_int / 60
 
     # Fit the measured AIF: AIFm
@@ -427,9 +428,10 @@ def AIF_fit_weights(t, AIFm, INTERPOLATE=False, TIME_FRAMES=1):
     AIFm_fit_optimal = AIFm_fit_list[optimal_n]
 
     if INTERPOLATE:
-        return AIFm_fit_optimal, t, AIFfit_params_optimal
-    else:
-        return AIFm_fit_optimal, AIFfit_params_optimal
+        # Interpolate to original time frames
+        AIFm_fit_optimal = np.interp(t_org, t_int / 60, AIFm_fit_optimal)
+
+    return AIFm_fit_optimal, AIFfit_params_optimal
 
 
 # %% Supporting functions
