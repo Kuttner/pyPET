@@ -39,7 +39,7 @@ def AIF_fit(
     #
 
     # Check if time vector could be in seconds, then convert to minutes
-    if np.max(t) > 60:
+    if np.max(t) > 300:
         t = t / 60
 
     # %% Fit the measured AIF: AIFm
@@ -192,7 +192,7 @@ def AIF_fit_weights_disp(
     #
 
     # Check if time vector could be in seconds, then convert to minutes
-    if np.max(t) > 60:
+    if np.max(t) > 300:
         t = t / 60
 
     # %% Fit the measured AIF: AIFm
@@ -377,7 +377,7 @@ def AIF_fit_weights(t, AIFm, INTERPOLATE=False, TIME_FRAMES=1):
     #
 
     # Check if time vector could be in seconds, then convert to minutes
-    if np.max(t) > 60:
+    if np.max(t) > 300:
         t = t / 60
 
     # Set negative values to zero
