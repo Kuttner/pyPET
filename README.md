@@ -28,7 +28,9 @@ This Python library contains scripts, data and an example notebook to perform tr
 Voxel-wise (parametric) implementation for the Patlak model using least squares estimation is included, as well as a for-loop-based implementation voxel-wise Two-tissue reversible compartment model (very slow).
 
 ## Aim
-The purpose of this library is to provide scripts that perform tracer kinetic modeling in Python using. The library contains code for the following compartment models:
+The purpose of this library is to provide scripts to process PET imaging data in Python, including tracer kinetic modeling and basic reading of PET DICOM files. 
+
+[Tissue_compartment_modeling.py](Tissue_compartment_modeling.py) contains code for the following compartment models:
 - One-tissue compartment model [1]
 - Two-tissue irreversible compartment model [1]
 - Two-tissue reversible compartment model (regional and voxe-wise (parametric)) [1]
@@ -36,14 +38,16 @@ The purpose of this library is to provide scripts that perform tracer kinetic mo
 
 In addition, for visualization purposes, the commonly used Feng parametric AIF model [3] is included.
 
+## Example files
+- The Jupyter notebook [dPET_Kinetic_modeling_example.ipynb](dPET_Kinetic_modeling_example.ipynb) contains an example/exercise to show how to perform tissue compartment modeling in Python using some of the mentioned compartment models.
+- [Read_PET_dicom_file.py](Read_PET_dicom_file.py) contains an example of how to read a a PET DICOM file from a Siemens mMR scanner
+
 ## Requirments
 You can work either using your local standard Python installation, or by using for example Google Colabs.
 
 ## Dataset
 
-Example data for this package is available in this repository under `./Example_data/`.
-  
-The data consists of two files:
+The [Example_data](Example_data) for this repository consists of two files:
 - The AIF of a mouse measured during 45 minutes with 1s sampling interval.
 - Time-activity curves from four tissue regions (brain, left ventricle, liver and myocardium) measured during a 45 minute PET scan with framing: 1x30s, 24x5s, 9x20s, 8x300s.
 
