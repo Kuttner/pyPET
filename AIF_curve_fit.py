@@ -147,11 +147,13 @@ def AIF_fit(
 def AIF_fit_weights_disp(
     t,
     AIFm,
-    RETURN_FIT_PARAMS=False,
+    INTERPOLATE=False,
+    TIME_FRAMES=1,
     PLOT_DISPERSION=False,
     SAVE_FIG=False,
     SAVE_PATH=None,
     SAVE_CSV=False,
+    DISP_CORR_X_MIN=0,  # 0 minutes means all data is used for dispersion correction
 ):
     # Function that fits the Feng1993 AIF function to measured AIF data
     # A fit is performed to the measured data AIFm, and returned as AIFm_fit,
@@ -180,21 +182,31 @@ def AIF_fit_weights_disp(
     # where AIFu is the dispersion corrected AIFm and d(t) = (1/tau)*exp(-t/tau)
     # is the dispersion function and (x) stands for convolution.
     #
-    # Input:    t           Time vector in minutes (If seconds are passed, its converted)
-    #           AIFm        The measured AIF
-    #           FLAGS       Plot and save flags
+    # Input:    t                   Time vector in minutes (If seconds are passed, its converted)
+    #           AIFm                The measured AIF
+    #           FLAGS               Plot and save flags
+    #           DISP_CORR_X_MIN     If > 0, then only the first X minutes of AIFm are used for dispersion correction, but all values are saved
     #
-    # Output    AIFm_fit    The Feng1993 fit to AIFm
-    #           AIFu        The undispersed (corrected) AIF
-    #                       (Neglect this output if an IDIF is fitted)
+    # Output    AIFm_fit            The Feng1993 fit to AIFm
+    #           AIFu                The undispersed (corrected) AIF
+    #                               (Neglect this output if an IDIF is fitted)
     #
     # Written by Samuel Kuttner 2022-12-01
     #
 
     # Check if time vector could be in seconds, then convert to minutes
-    if np.max(t) > 300:
+    if np.max(t) > 60:
         t = t / 60
 
+    # Set negative values to zero
+    AIFm[AIFm < 0] = 0
+
+    if INTERPOLATE:
+        AIFm, _, t_int = interpolate_time_frames(
+            AIFm, t * 60, AIFm, t * 60, TIME_FRAMES
+        )
+        t_org = t
+        t = t_int / 60
     # %% Fit the measured AIF: AIFm
     # params_init = [0, 141, 0.296, 0.259, -27, -0.55, -0.04]
     params_init = [0.975, 80.26, 1, 2.18, -5.235, -0.071, -0.189]
@@ -205,7 +217,7 @@ def AIF_fit_weights_disp(
     AIFm_fit_params_list = []
     AIFm_fit_list = []
 
-    for n in range(1, 21):
+    for n in range(1, 100):
         weight = np.power(AIFm, 1 / n)
 
         AIFm_fit_params, pcov, infodict, mesg, ier = curve_fit(
@@ -230,6 +242,7 @@ def AIF_fit_weights_disp(
     optimal_n = np.argmin(J_max)
     AIFm_fit_params_optimal = AIFm_fit_params_list[optimal_n]
     AIFm_fit_optimal = AIFm_fit_list[optimal_n]
+    print("Optimal n: ", optimal_n)
     # %% Find the undispersed input function: AIFu
     # Use same limits and initial conditions, but add for TAUd.
     initTAUd = 0.12
@@ -245,7 +258,17 @@ def AIF_fit_weights_disp(
     AIFd_fit_list = []
     AIFu_list = []
 
-    for n in range(1, 21):
+    # If DISP_CORR_X_MIN is True, then only fit the first X minutes of AIFm
+    if DISP_CORR_X_MIN > 0:
+        t_org = t.copy()
+        AIFm_org = AIFm.copy()
+        t = t[t_org < DISP_CORR_X_MIN]
+        AIFm = AIFm[t_org < DISP_CORR_X_MIN]
+    else:
+        t_org = t.copy()
+        AIFm_org = AIFm.copy()
+
+    for n in range(1, 60):
         weight = np.power(AIFm, 1 / n)
 
         AIFd_fit_params, pcov2, infodict2, mesg2, ier2 = curve_fit(
@@ -263,8 +286,8 @@ def AIF_fit_weights_disp(
 
         TAUu, A1u, A2u, A3u, L1u, L2u, L3u, TAUd = AIFd_fit_params
 
-        AIFu = feng_aif(t, TAUu, A1u, A2u, A3u, L1u, L2u, L3u)
-        AIFd_fit = AIFd_fcn(t, TAUu, A1u, A2u, A3u, L1u, L2u, L3u, TAUd)
+        AIFu = feng_aif(t_org, TAUu, A1u, A2u, A3u, L1u, L2u, L3u)
+        AIFd_fit = AIFd_fcn(t_org, TAUu, A1u, A2u, A3u, L1u, L2u, L3u, TAUd)
         # r2u = r_squared(AIFm, AIFd)
         AIFd_fit_list.append(AIFd_fit)
         AIFu_list.append(AIFu)
@@ -274,7 +297,7 @@ def AIF_fit_weights_disp(
     optimal_n = np.argmin(J_max)
     AIFd_fit_params_optimal = AIFd_fit_params_list[optimal_n]
     (
-        TAUdopt,
+        TAUuopt,
         A1dopt,
         A2dopt,
         A3dopt,
@@ -285,9 +308,9 @@ def AIF_fit_weights_disp(
     ) = AIFd_fit_params_optimal
     AIFu_optimal = AIFu_list[optimal_n]
     AIFd_optimal = AIFd_fcn(
-        t, TAUdopt, A1dopt, A2dopt, A3dopt, L1dopt, L2dopt, L3dopt, TAUdopt
+        t_org, TAUuopt, A1dopt, A2dopt, A3dopt, L1dopt, L2dopt, L3dopt, TAUdopt
     )
-
+    print("Optimal n: ", optimal_n)
     # %% Plot
     X_axis = (3000, 300)
     fig, ax = plt.subplots(figsize=(10, 7))
@@ -302,10 +325,14 @@ def AIF_fit_weights_disp(
                 bbox_transform=ax.transAxes,
             )
         plt.plot(t[:t_max], AIFm[:t_max], label="Measured AIF (AIFm)")
-        plt.plot(t[:t_max], AIFm_fit[:t_max], label="AIFm_fit")
+        plt.plot(t_org[:t_max], AIFm_fit[:t_max], label="AIFm_fit")
         if PLOT_DISPERSION:
-            plt.plot(t[:t_max], AIFu_optimal[:t_max], label="Undispersed AIF (AIFu)")
-            plt.plot(t[:t_max], AIFd_optimal[:t_max], label="Dispersed AIF (AIFu x D) ")
+            plt.plot(
+                t_org[:t_max], AIFu_optimal[:t_max], label="Undispersed AIF (AIFu)"
+            )
+            plt.plot(
+                t_org[:t_max], AIFd_optimal[:t_max], label="Dispersed AIF (AIFu x D) "
+            )
         if idx == 0:
             plt.title(SAVE_PATH)
         else:
@@ -335,10 +362,7 @@ def AIF_fit_weights_disp(
         )
         df2.to_csv(save_path, index=False)
 
-    if RETURN_FIT_PARAMS:
-        return AIFm_fit_optimal, AIFm_fit_params_optimal
-    else:
-        return AIFm_fit_optimal, AIFu_optimal
+    return AIFm_fit_optimal, AIFu_optimal, AIFm_fit_params_optimal
 
 
 # %% AIF fit with weights

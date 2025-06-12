@@ -62,14 +62,30 @@ Ct_2TCM_rev = CM_vB_2TCM_rev((AIF_A, AIF_t), K1, k2, vB, k3, k4)
 #     Ct = CM_vB((AIF_A, AIF_t), K1, k2, vB, k3, k4)
 #     plt_title = tcm + f", K1={K1}, k2={k2}, k3={k3}, k4={k4}, vB={vB}"
 
+# Plot the AIF only
+plt.plot(AIF_t, AIF_A, label="AIF")
+plt.xlabel("Time [min]")
+plt.ylabel("SUV (g/mL)")
+plt.legend(loc="upper right")
+plt.title("AIF")
+plt.show()
+
+# Plot a tissue curve and a noisy tissue curve
+Ct_1TCM_noisy = Ct_1TCM + np.random.normal(0, 0.05, len(Ct_1TCM))
+plt.plot(AIF_t, Ct_1TCM_noisy, label="PET data")
+# plt.plot(AIF_t, Ct_1TCM, label="1TCM model fit", linewidth=3)
+plt.xlabel("Time [min]")
+plt.ylabel("SUV (g/mL)")
+plt.legend(loc="lower right")
+plt.title("K1=" + str(K1) + ", k2=" + str(k2))
+
 plt.plot(AIF_t, AIF_A, label="AIF")
 plt.plot(AIF_t, Ct_1TCM, label="1TCM")
 plt.plot(AIF_t, Ct_2TCM_irrev, label="2TCM_irrev")
 plt.plot(AIF_t, Ct_2TCM_rev, label="2TCM_rev")
-# plt.plot(AIF_t, Ct, label="Tissue curve")
 plt.xlabel("Time [min]")
 plt.ylabel("SUV (g/mL)")
-plt.legend()
+plt.legend(loc="upper right")
 plt.title(
     "K1="
     + str(K1)
@@ -82,6 +98,31 @@ plt.title(
     + ", vB="
     + str(vB)
 )
+
+# Plot a toy example of a water tap filling a bucket with 10 l/min and a leak of 0.1 V /min. Plot the water level in the bucket over time.
+K1water = 10
+k2water = 1
+vBwater = 0
+time_vector = np.linspace(0, 5, 100)
+V_water1 = K1water * time_vector
+V_water2 = (K1water / k2water) * (1 - np.exp(-k2water * time_vector))
+
+
+plt.figure()
+plt.plot(time_vector, V_water1, label="No leak")
+plt.xlabel("Time [min]")
+plt.ylabel("Volume [L]")
+plt.legend(loc="lower right")
+plt.title("Water tap filling a bucket with 10 l/min")
+plt.show()
+
+plt.figure()
+plt.plot(time_vector, V_water2, label="With leak")
+plt.xlabel("Time [min]")
+plt.ylabel("Volume [L]")
+plt.legend(loc="lower right")
+plt.title("Water tap filling a bucket with 10 l/min and a leak of 1V l/min")
+
 # %% Varying K1
 K1_range = np.linspace(0.01, 0.5, 5)
 k2 = 0.05
@@ -103,7 +144,7 @@ for idx, K1 in enumerate(K1_range):
     plt.plot(AIF_t, Ct_1TCM[idx], label=f"K1={K1}")
 plt.xlabel("Time [min]")
 plt.ylabel("SUV (g/mL)")
-plt.legend()
+plt.legend(loc="upper right")
 plt.title(
     "1TCM, "
     + "k2="
@@ -123,7 +164,7 @@ for idx, K1 in enumerate(K1_range):
     plt.plot(AIF_t, Ct_2TCM_irrev[idx], label=f"K1={K1}")
 plt.xlabel("Time [min]")
 plt.ylabel("SUV (g/mL)")
-plt.legend()
+plt.legend(loc="upper right")
 plt.title(
     "2TCM_irrev, "
     + "k2="
@@ -143,7 +184,7 @@ for idx, K1 in enumerate(K1_range):
     plt.plot(AIF_t, Ct_2TCM_rev[idx], label=f"K1={K1}")
 plt.xlabel("Time [min]")
 plt.ylabel("SUV (g/mL)")
-plt.legend()
+plt.legend(loc="upper right")
 plt.title(
     "2TCM_rev, "
     + "k2="
@@ -178,7 +219,7 @@ for idx, k2 in enumerate(k2_range):
     plt.plot(AIF_t, Ct_1TCM[idx], label=f"k2={k2}")
 plt.xlabel("Time [min]")
 plt.ylabel("SUV (g/mL)")
-plt.legend()
+plt.legend(loc="upper right")
 plt.title(
     "1TCM, "
     + "K1="
@@ -197,7 +238,7 @@ for idx, k2 in enumerate(k2_range):
     plt.plot(AIF_t, Ct_2TCM_irrev[idx], label=f"k2={k2}")
 plt.xlabel("Time [min]")
 plt.ylabel("SUV (g/mL)")
-plt.legend()
+plt.legend(loc="upper right")
 plt.title(
     "2TCM_irrev, "
     + "K1="
@@ -216,7 +257,7 @@ for idx, k2 in enumerate(k2_range):
     plt.plot(AIF_t, Ct_2TCM_rev[idx], label=f"k2={k2}")
 plt.xlabel("Time [min]")
 plt.ylabel("SUV (g/mL)")
-plt.legend()
+plt.legend(loc="upper right")
 plt.title(
     "2TCM_rev, "
     + "K1="
@@ -250,7 +291,7 @@ for idx, k3 in enumerate(k3_range):
     plt.plot(AIF_t, Ct_1TCM[idx], label=f"k3={k3}")
 plt.xlabel("Time [min]")
 plt.ylabel("SUV (g/mL)")
-plt.legend()
+plt.legend(loc="upper right")
 plt.title(
     "1TCM, "
     + "K1="
@@ -269,7 +310,7 @@ for idx, k3 in enumerate(k3_range):
     plt.plot(AIF_t, Ct_2TCM_irrev[idx], label=f"k3={k3}")
 plt.xlabel("Time [min]")
 plt.ylabel("SUV (g/mL)")
-plt.legend()
+plt.legend(loc="upper right")
 plt.title(
     "2TCM_irrev, "
     + "K1="
@@ -288,7 +329,7 @@ for idx, k3 in enumerate(k3_range):
     plt.plot(AIF_t, Ct_2TCM_rev[idx], label=f"k3={k3}")
 plt.xlabel("Time [min]")
 plt.ylabel("SUV (g/mL)")
-plt.legend()
+plt.legend(loc="upper right")
 plt.title(
     "2TCM_rev, "
     + "K1="
@@ -322,7 +363,7 @@ for idx, k4 in enumerate(k4_range):
     plt.plot(AIF_t, Ct_1TCM[idx], label=f"k4={k4}")
 plt.xlabel("Time [min]")
 plt.ylabel("SUV (g/mL)")
-plt.legend()
+plt.legend(loc="upper right")
 plt.title(
     "1TCM, "
     + "K1="
@@ -341,7 +382,8 @@ for idx, k4 in enumerate(k4_range):
     plt.plot(AIF_t, Ct_2TCM_irrev[idx], label=f"k4={k4}")
 plt.xlabel("Time [min]")
 plt.ylabel("SUV (g/mL)")
-plt.legend()
+# Legend upper right
+plt.legend(loc="upper right")
 plt.title(
     "2TCM_irrev, "
     + "K1="
@@ -360,7 +402,7 @@ for idx, k4 in enumerate(k4_range):
     plt.plot(AIF_t, Ct_2TCM_rev[idx], label=f"k4={k4}")
 plt.xlabel("Time [min]")
 plt.ylabel("SUV (g/mL)")
-plt.legend()
+plt.legend(loc="upper right")
 plt.title(
     "2TCM_rev, "
     + "K1="
