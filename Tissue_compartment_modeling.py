@@ -70,7 +70,11 @@ def oneTCM(Cp, t_p, Ct, t_t=0, INTERPOLATE=True, TIME_FRAMES=1):
     fit = np.interp(t_p, t_int, fit_int)
 
     # K_fit_pred = curve_fit(CM_vB, (Cp_pred_int, t_int), Ct_int, method='trf', bounds=(0, 10), p0=K_init)
-    return K_fit[0], fit, mse_func(Ct_int, fit_int)
+    return (
+        K_fit[0],
+        fit,
+        mse_func(Ct_int, fit_int),
+    )  # Returns: (K1, k2, vB), tissue_fit, mse
 
 
 # %% Irreversible two tissue compartment model (k4=0)
@@ -136,7 +140,12 @@ def twoTCMirrev(Cp, t_p, Ct, t_t=0, INTERPOLATE=True, TIME_FRAMES=2.5):
     Ki = K_fit[0][0] * K_fit[0][3] / (K_fit[0][1] + K_fit[0][3])
 
     # K_fit_pred = curve_fit(CM_vB, (Cp_pred_int, t_int), Ct_int, method='trf', bounds=(0, 10), p0=K_init)
-    return K_fit[0], Ki, fit, mse_func(Ct_int, fit_int)
+    return (
+        K_fit[0],
+        Ki,
+        fit,
+        mse_func(Ct_int, fit_int),
+    )  # Returns: (K1, k2, vB, k3), Ki, tissue_fit, mse
 
 
 # %% Reversible two tissue compartment model
@@ -191,7 +200,12 @@ def twoTCMrev(Cp, t_p, Ct, t_t=0, INTERPOLATE=True, TIME_FRAMES=2.5):
     Ki = K_fit[0][0] * K_fit[0][3] / (K_fit[0][1] + K_fit[0][3])
 
     # K_fit_pred = curve_fit(CM_vB, (Cp_pred_int, t_int), Ct_int, method='trf', bounds=(0, 10), p0=K_init)
-    return K_fit[0], Ki, fit, mse_func(Ct_int, fit_int)
+    return (
+        K_fit[0],
+        Ki,
+        fit,
+        mse_func(Ct_int, fit_int),
+    )  # Returns: (K1, k2, vB, k3, k4), Ki, tissue_fit, mse
 
 
 # %% Parametric (voxel-wise) reversible two-tissue compartment model (brute force method using a for loop)
