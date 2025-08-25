@@ -25,7 +25,16 @@ def interpolate_time_frames(C_A, t_A, C_B, t_B, frame_length):
 
 # %% #One tissue compartment model
 def oneTCM(Cp, t_p, Ct, t_t=0, INTERPOLATE=True, TIME_FRAMES=1):
-    # Input times t_p and t_t must be in seconds
+    # Input times t_p and t_t and TIME_FRAMES may be in seconds or minutes
+
+    # Convert all time vectors to minutes
+    if np.max(t_p) > 60:
+        t_p = t_p / 60
+    if np.max(t_t) > 60:
+        t_t = t_t / 60
+    if TIME_FRAMES > 0.5:
+        TIME_FRAMES = TIME_FRAMES / 60
+
     # If t_t is not passed, assume it equals t_p
     if np.sum(t_t) == 0:
         t_t = t_p
@@ -39,9 +48,6 @@ def oneTCM(Cp, t_p, Ct, t_t=0, INTERPOLATE=True, TIME_FRAMES=1):
         t_int = t_p
         Cp_int = Cp
         Ct_int = Ct
-
-    # Convert to minutes
-    t_int = t_int / 60
 
     # Define solution to 1TCM diff equation (no vB)
     # def CM(X, K1, k2):
@@ -69,7 +75,7 @@ def oneTCM(Cp, t_p, Ct, t_t=0, INTERPOLATE=True, TIME_FRAMES=1):
     fit_int = CM_vB((Cp_int, t_int), K_fit[0][0], K_fit[0][1], K_fit[0][2])
 
     # Interpolate back to original spacing
-    fit = np.interp(t_p / 60, t_int, fit_int)
+    fit = np.interp(t_p, t_int, fit_int)
 
     # K_fit_pred = curve_fit(CM_vB, (Cp_pred_int, t_int), Ct_int, method='trf', bounds=(0, 10), p0=K_init)
     return (
@@ -80,8 +86,16 @@ def oneTCM(Cp, t_p, Ct, t_t=0, INTERPOLATE=True, TIME_FRAMES=1):
 
 
 # %% Irreversible two tissue compartment model (k4=0)
-def twoTCMirrev(Cp, t_p, Ct, t_t=0, INTERPOLATE=True, TIME_FRAMES=2.5):
-    # Input times t_p and t_t must be in seconds
+def twoTCMirrev(Cp, t_p, Ct, t_t=0, INTERPOLATE=True, TIME_FRAMES=1):
+    # Input times t_p and t_t and TIME_FRAMES may be in seconds or minutes
+
+    # Convert all time vectors to minutes
+    if np.max(t_p) > 60:
+        t_p = t_p / 60
+    if np.max(t_t) > 60:
+        t_t = t_t / 60
+    if TIME_FRAMES > 0.5:
+        TIME_FRAMES = TIME_FRAMES / 60
 
     # Set negative and small positive values to zero in Cp:
     Cp[Cp < 10e-5] = 0
@@ -99,10 +113,6 @@ def twoTCMirrev(Cp, t_p, Ct, t_t=0, INTERPOLATE=True, TIME_FRAMES=2.5):
         t_int = t_p
         Cp_int = Cp
         Ct_int = Ct
-
-    # Check if time vector could be in seconds, then convert to minutes
-    if np.max(t_int) > 60:
-        t_int = t_int / 60
 
     # Cp_pred_int = np.interp(t_int, t2, Cp_pred)
 
@@ -139,7 +149,7 @@ def twoTCMirrev(Cp, t_p, Ct, t_t=0, INTERPOLATE=True, TIME_FRAMES=2.5):
     fit_int = CM_vB((Cp_int, t_int), K_fit[0][0], K_fit[0][1], K_fit[0][2], K_fit[0][3])
 
     # Interpolate back to original spacing
-    fit = np.interp(t_p / 60, t_int, fit_int)
+    fit = np.interp(t_p, t_int, fit_int)
 
     # Calculate net influx rate constant
     Ki = K_fit[0][0] * K_fit[0][3] / (K_fit[0][1] + K_fit[0][3])
@@ -154,8 +164,16 @@ def twoTCMirrev(Cp, t_p, Ct, t_t=0, INTERPOLATE=True, TIME_FRAMES=2.5):
 
 
 # %% Reversible two tissue compartment model
-def twoTCMrev(Cp, t_p, Ct, t_t=0, INTERPOLATE=True, TIME_FRAMES=2.5):
-    # Input times t_p and t_t must be in seconds
+def twoTCMrev(Cp, t_p, Ct, t_t=0, INTERPOLATE=True, TIME_FRAMES=1):
+    # Input times t_p and t_t and TIME_FRAMES may be in seconds or minutes
+
+    # Convert all time vectors to minutes
+    if np.max(t_p) > 60:
+        t_p = t_p / 60
+    if np.max(t_t) > 60:
+        t_t = t_t / 60
+    if TIME_FRAMES > 0.5:
+        TIME_FRAMES = TIME_FRAMES / 60
 
     # Set negative and small positive values to zero in Cp:
     Cp[Cp < 10e-5] = 0
@@ -173,10 +191,6 @@ def twoTCMrev(Cp, t_p, Ct, t_t=0, INTERPOLATE=True, TIME_FRAMES=2.5):
         t_int = t_p
         Cp_int = Cp
         Ct_int = Ct
-
-    # Check if time vector could be in seconds, then convert to minutes
-    if np.max(t_int) > 60:
-        t_int = t_int / 60
 
     # Curve fit no vB
     #    K_init = 0.5, 0.035
@@ -202,7 +216,7 @@ def twoTCMrev(Cp, t_p, Ct, t_t=0, INTERPOLATE=True, TIME_FRAMES=2.5):
     )
 
     # Interpolate back to original spacing
-    fit = np.interp(t_p / 60, t_int, fit_int)
+    fit = np.interp(t_p, t_int, fit_int)
 
     # Calculate net influx rate constant
     Ki = K_fit[0][0] * K_fit[0][3] / (K_fit[0][1] + K_fit[0][3])
