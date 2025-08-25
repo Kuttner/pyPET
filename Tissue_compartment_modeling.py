@@ -25,7 +25,7 @@ def interpolate_time_frames(C_A, t_A, C_B, t_B, frame_length):
 
 # %% #One tissue compartment model
 def oneTCM(Cp, t_p, Ct, t_t=0, INTERPOLATE=True, TIME_FRAMES=1):
-    # Input times t_p and t_t must be in minutes
+    # Input times t_p and t_t must be in seconds
     # If t_t is not passed, assume it equals t_p
     if np.sum(t_t) == 0:
         t_t = t_p
@@ -33,7 +33,7 @@ def oneTCM(Cp, t_p, Ct, t_t=0, INTERPOLATE=True, TIME_FRAMES=1):
     # Interpolate to uniform time framing of 1s
     if INTERPOLATE:
         Cp_int, Ct_int, t_int = interpolate_time_frames(
-            Cp, t_p * 60, Ct, t_t * 60, TIME_FRAMES
+            Cp, t_p, Ct, t_t, TIME_FRAMES
         )  # Must be in seconds to make integration work
     else:
         t_int = t_p
@@ -81,7 +81,7 @@ def oneTCM(Cp, t_p, Ct, t_t=0, INTERPOLATE=True, TIME_FRAMES=1):
 
 # %% Irreversible two tissue compartment model (k4=0)
 def twoTCMirrev(Cp, t_p, Ct, t_t=0, INTERPOLATE=True, TIME_FRAMES=2.5):
-    # Input times t_p and t_t must be in minutes
+    # Input times t_p and t_t must be in seconds
 
     # Set negative and small positive values to zero in Cp:
     Cp[Cp < 10e-5] = 0
@@ -93,7 +93,7 @@ def twoTCMirrev(Cp, t_p, Ct, t_t=0, INTERPOLATE=True, TIME_FRAMES=2.5):
     # Interpolate to uniform time framing of 1s
     if INTERPOLATE:
         Cp_int, Ct_int, t_int = interpolate_time_frames(
-            Cp, t_p * 60, Ct, t_t * 60, TIME_FRAMES
+            Cp, t_p, Ct, t_t, TIME_FRAMES
         )  # Must be in seconds to make integration work
     else:
         t_int = t_p
@@ -155,7 +155,7 @@ def twoTCMirrev(Cp, t_p, Ct, t_t=0, INTERPOLATE=True, TIME_FRAMES=2.5):
 
 # %% Reversible two tissue compartment model
 def twoTCMrev(Cp, t_p, Ct, t_t=0, INTERPOLATE=True, TIME_FRAMES=2.5):
-    # Input times t_p and t_t must be in minutes
+    # Input times t_p and t_t must be in seconds
 
     # Set negative and small positive values to zero in Cp:
     Cp[Cp < 10e-5] = 0
@@ -167,7 +167,7 @@ def twoTCMrev(Cp, t_p, Ct, t_t=0, INTERPOLATE=True, TIME_FRAMES=2.5):
     # Interpolate to uniform time framing of 1s
     if INTERPOLATE:
         Cp_int, Ct_int, t_int = interpolate_time_frames(
-            Cp, t_p * 60, Ct, t_t * 60, TIME_FRAMES
+            Cp, t_p, Ct, t_t, TIME_FRAMES
         )  # Must be in seconds to make integration work
     else:
         t_int = t_p
