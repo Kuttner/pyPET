@@ -24,7 +24,9 @@ def interpolate_time_frames(C_A, t_A, C_B, t_B, frame_length):
 
 
 # %% #One tissue compartment model
-def oneTCM(Cp, t_p, Ct, t_t=0, INTERPOLATE=True, TIME_FRAMES=1):
+def oneTCM(
+    Cp, t_p, Ct, t_t=0, INTERPOLATE=True, TIME_FRAMES=1, fit_vB=True, vB_fixed=0.02
+):
     # Input times t_p and t_t and TIME_FRAMES may be in seconds or minutes
 
     # Convert all time vectors to minutes
@@ -60,19 +62,40 @@ def oneTCM(Cp, t_p, Ct, t_t=0, INTERPOLATE=True, TIME_FRAMES=1):
     #     Ct = Ct[0:len(t2)]
     #     return Ct
 
-    # Curve fit no vB
+    # Curve fit no vB in model equation
     #    K_init = 0.5, 0.035
     #    K_fit = curve_fit(CM, (Cp_int, t_int), Ct_int, method='trf', bounds=(0, 10), p0=K_init)
     #    fit_int = CM((Cp_int, t_int), K_fit[0][0], K_fit[0][1])
 
-    # Curve fit with vB
-    K_init = 0.5, 0.035, 0.05
-    CM_vB = CM_vB_wrap(2)
+    # Curve fit with vB in model equation
+    if fit_vB:
+        # print("Fitting vB")
+        K_init = 0.1, 0.1, 0  # K1, k2, vB
+        CM_vB = CM_vB_wrap(2)
+    else:
+        # print("Not fitting vB")
+        K_init = 0.1, 0.1  # K1, k2
+        CM_vB = CM_vB_wrap(2, fit_vB, vB_fixed)
+
     K_fit = curve_fit(
         CM_vB, (Cp_int, t_int), Ct_int, method="trf", bounds=(0, 10), p0=K_init
     )
-    #    K_fit = curve_fit(CM_vB, (Cp_int, t_int), Ct_int, method='lm', p0=K_init)
-    fit_int = CM_vB((Cp_int, t_int), K_fit[0][0], K_fit[0][1], K_fit[0][2])
+
+    if fit_vB:
+        fit_int = CM_vB(
+            (Cp_int, t_int),
+            K_fit[0][0],
+            K_fit[0][1],
+            K_fit[0][2],
+        )
+    else:
+        fit_int = CM_vB(
+            (Cp_int, t_int),
+            K_fit[0][0],
+            K_fit[0][1],
+            fit_vB,
+            vB_fixed,
+        )
 
     # Interpolate back to original spacing
     fit = np.interp(t_p, t_int, fit_int)
@@ -82,11 +105,14 @@ def oneTCM(Cp, t_p, Ct, t_t=0, INTERPOLATE=True, TIME_FRAMES=1):
         K_fit[0],
         fit,
         mse_func(Ct_int, fit_int),
-    )  # Returns: (K1, k2, vB), tissue_fit, mse
+    )  # Returns: (K1, k2, vB), tissue_fit, mse (when fit_vB=True)
+    # Returns: (K1, k2), tissue_fit, mse (when fit_v
 
 
 # %% Irreversible two tissue compartment model (k4=0)
-def twoTCMirrev(Cp, t_p, Ct, t_t=0, INTERPOLATE=True, TIME_FRAMES=1):
+def twoTCMirrev(
+    Cp, t_p, Ct, t_t=0, INTERPOLATE=True, TIME_FRAMES=1, fit_vB=True, vB_fixed=0.02
+):
     # Input times t_p and t_t and TIME_FRAMES may be in seconds or minutes
 
     # Convert all time vectors to minutes
@@ -127,15 +153,21 @@ def twoTCMirrev(Cp, t_p, Ct, t_t=0, INTERPOLATE=True, TIME_FRAMES=1):
     #     Ct = Ct[0:len(t2)]
     #     return Ct
 
-    # Curve fit no vB
+    # # Curve fit without vB in model equation
     #    K_init = 0.5, 0.035
     #    K_fit = curve_fit(CM, (Cp_int, t_int), Ct_int, method='trf', bounds=(0, 10), p0=K_init)
     #    fit_int = CM((Cp_int, t_int), K_fit[0][0], K_fit[0][1])
 
-    # Curve fit with vB
-    # K_init = 0.5, 0.035, 0.035, 0.05
-    K_init = 0.1, 0.1, 0, 0.1
-    CM_vB = CM_vB_wrap(3)
+    # Curve fit with vB in model equation
+    if fit_vB:
+        print("Fitting vB")
+        K_init = 0.1, 0.1, 0, 0.1  # K1, k2, vB, k3
+        CM_vB = CM_vB_wrap(3)
+    else:
+        print("Not fitting vB")
+        K_init = 0.1, 0.1, 0.1  # K1, k2, k3
+        CM_vB = CM_vB_wrap(3, fit_vB, vB_fixed)
+
     K_fit = curve_fit(
         CM_vB,
         (Cp_int, t_int),
@@ -145,14 +177,32 @@ def twoTCMirrev(Cp, t_p, Ct, t_t=0, INTERPOLATE=True, TIME_FRAMES=1):
         p0=K_init,
         maxfev=5000,
     )
-    #    K_fit = curve_fit(CM_vB, (Cp_int, t_int), Ct_int, method='lm', p0=K_init)
-    fit_int = CM_vB((Cp_int, t_int), K_fit[0][0], K_fit[0][1], K_fit[0][2], K_fit[0][3])
+    if fit_vB:
+        fit_int = CM_vB(
+            (Cp_int, t_int),
+            K_fit[0][0],
+            K_fit[0][1],
+            K_fit[0][2],
+            K_fit[0][3],
+        )
+    else:
+        fit_int = CM_vB(
+            (Cp_int, t_int),
+            K_fit[0][0],
+            K_fit[0][1],
+            K_fit[0][2],
+            fit_vB,
+            vB_fixed,
+        )
 
     # Interpolate back to original spacing
     fit = np.interp(t_p, t_int, fit_int)
 
     # Calculate net influx rate constant
-    Ki = K_fit[0][0] * K_fit[0][3] / (K_fit[0][1] + K_fit[0][3])
+    if fit_vB:
+        Ki = K_fit[0][0] * K_fit[0][3] / (K_fit[0][1] + K_fit[0][3])
+    else:
+        Ki = K_fit[0][0] * K_fit[0][2] / (K_fit[0][1] + K_fit[0][2])
 
     # K_fit_pred = curve_fit(CM_vB, (Cp_pred_int, t_int), Ct_int, method='trf', bounds=(0, 10), p0=K_init)
     return (
@@ -160,11 +210,14 @@ def twoTCMirrev(Cp, t_p, Ct, t_t=0, INTERPOLATE=True, TIME_FRAMES=1):
         Ki,
         fit,
         mse_func(Ct_int, fit_int),
-    )  # Returns: (K1, k2, vB, k3), Ki, tissue_fit, mse
+    )  # Returns: (K1, k2, vB, k3), Ki, tissue_fit, mse (when fit_vB=True)
+    # Returns: (K1, k2, k3), Ki, tissue_fit, mse (when fit_vB=False)
 
 
 # %% Reversible two tissue compartment model
-def twoTCMrev(Cp, t_p, Ct, t_t=0, INTERPOLATE=True, TIME_FRAMES=1):
+def twoTCMrev(
+    Cp, t_p, Ct, t_t=0, INTERPOLATE=True, TIME_FRAMES=1, fit_vB=True, vB_fixed=0.02
+):
     # Input times t_p and t_t and TIME_FRAMES may be in seconds or minutes
 
     # Convert all time vectors to minutes
@@ -192,15 +245,22 @@ def twoTCMrev(Cp, t_p, Ct, t_t=0, INTERPOLATE=True, TIME_FRAMES=1):
         Cp_int = Cp
         Ct_int = Ct
 
-    # Curve fit no vB
+    # Curve fit without vB in model equation
     #    K_init = 0.5, 0.035
     #    K_fit = curve_fit(CM, (Cp_int, t_int), Ct_int, method='trf', bounds=(0, 10), p0=K_init)
     #    fit_int = CM((Cp_int, t_int), K_fit[0][0], K_fit[0][1])
 
-    # Curve fit with vB
-    # K_init = 0.5, 0.035, 0.035, 0.05
-    K_init = 0.1, 0.1, 0, 0.1, 0.1
-    CM_vB = CM_vB_wrap(4)
+    # Curve fit with vB in model equation
+    # Handle both cases with and without fitting of vB. If not fitting vB, it is fixed to the value of vB_fixed.
+    if fit_vB:
+        print("Fitting vB")
+        K_init = 0.1, 0.1, 0, 0.1, 0.1  # K1, k2, vB, k3, k4
+        CM_vB = CM_vB_wrap(4)
+    else:
+        print("Not fitting vB")
+        K_init = 0.1, 0.1, 0.1, 0.1  # K1, k2, k3, k4
+        CM_vB = CM_vB_wrap(4, fit_vB, vB_fixed)
+
     K_fit = curve_fit(
         CM_vB,
         (Cp_int, t_int),
@@ -210,16 +270,34 @@ def twoTCMrev(Cp, t_p, Ct, t_t=0, INTERPOLATE=True, TIME_FRAMES=1):
         p0=K_init,
         maxfev=5000,
     )
-    #    K_fit = curve_fit(CM_vB, (Cp_int, t_int), Ct_int, method='lm', p0=K_init)
-    fit_int = CM_vB(
-        (Cp_int, t_int), K_fit[0][0], K_fit[0][1], K_fit[0][2], K_fit[0][3], K_fit[0][4]
-    )
+    if fit_vB:
+        fit_int = CM_vB(
+            (Cp_int, t_int),
+            K_fit[0][0],
+            K_fit[0][1],
+            K_fit[0][2],
+            K_fit[0][3],
+            K_fit[0][4],
+        )
+    else:
+        fit_int = CM_vB(
+            (Cp_int, t_int),
+            K_fit[0][0],
+            K_fit[0][1],
+            K_fit[0][2],
+            K_fit[0][3],
+            fit_vB,
+            vB_fixed,
+        )
 
     # Interpolate back to original spacing
     fit = np.interp(t_p, t_int, fit_int)
 
     # Calculate net influx rate constant
-    Ki = K_fit[0][0] * K_fit[0][3] / (K_fit[0][1] + K_fit[0][3])
+    if fit_vB:
+        Ki = K_fit[0][0] * K_fit[0][3] / (K_fit[0][1] + K_fit[0][3])
+    else:
+        Ki = K_fit[0][0] * K_fit[0][2] / (K_fit[0][1] + K_fit[0][2])
 
     # K_fit_pred = curve_fit(CM_vB, (Cp_pred_int, t_int), Ct_int, method='trf', bounds=(0, 10), p0=K_init)
     return (
@@ -227,7 +305,8 @@ def twoTCMrev(Cp, t_p, Ct, t_t=0, INTERPOLATE=True, TIME_FRAMES=1):
         Ki,
         fit,
         mse_func(Ct_int, fit_int),
-    )  # Returns: (K1, k2, vB, k3, k4), Ki, tissue_fit, mse
+    )  # Returns: (K1, k2, vB, k3, k4), Ki, tissue_fit, mse (when fit_vB=True)
+    # Returns: (K1, k2, k3, k4), Ki, tissue_fit, mse (when fit_vB=False)
 
 
 # %% Parametric (voxel-wise) reversible two-tissue compartment model (brute force method using a for loop)
@@ -285,9 +364,16 @@ def param_twoTCMrev(Cp, img, t_p, INTERPOLATE=True, TIME_FRAMES=2.5, num_samples
 
 
 # %%
-def CM_vB_wrap(how_many_k=2):
-    def CM_vB(X, K1, k2, vB, *args):
+def CM_vB_wrap(how_many_k=2, fit_vB=True, vB_fixed=0.02):
+    def CM_vB(X, K1, k2, *args):
         Cp, t2 = X
+        # Determine vB based on the flag
+        if fit_vB:
+            vB = args[0]
+            args = args[1:]  # Remove vB from the remaining arguments
+        else:
+            vB = vB_fixed  # Use the fixed value of vB
+
         if how_many_k == 2:
             h = K1 * np.exp(-k2 * t2)
         else:

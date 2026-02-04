@@ -36,6 +36,8 @@ The purpose of this library is to provide scripts to process PET imaging data in
 - Two-tissue reversible compartment model (regional and voxe-wise (parametric)) [1]
 - Patlak graphical analysis (regional and voxe-wise (parametric)) [2]
 
+The one- and two-tissue compartment models now also support using a fixed value of the fractional blood volume, vB. Simply call the functions with arguments (...fit_vB=False, vB_fixed=vB), where vB is the desired fixed value of the fractional blood volume.
+
 In addition, for visualization purposes, the commonly used Feng parametric AIF model [3] is included.
 
 ## Example files
