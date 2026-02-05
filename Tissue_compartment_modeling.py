@@ -160,11 +160,11 @@ def twoTCMirrev(
 
     # Curve fit with vB in model equation
     if fit_vB:
-        print("Fitting vB")
+        # print("Fitting vB")
         K_init = 0.1, 0.1, 0, 0.1  # K1, k2, vB, k3
         CM_vB = CM_vB_wrap(3)
     else:
-        print("Not fitting vB")
+        # print("Not fitting vB")
         K_init = 0.1, 0.1, 0.1  # K1, k2, k3
         CM_vB = CM_vB_wrap(3, fit_vB, vB_fixed)
 
@@ -253,11 +253,11 @@ def twoTCMrev(
     # Curve fit with vB in model equation
     # Handle both cases with and without fitting of vB. If not fitting vB, it is fixed to the value of vB_fixed.
     if fit_vB:
-        print("Fitting vB")
+        # print("Fitting vB")
         K_init = 0.1, 0.1, 0, 0.1, 0.1  # K1, k2, vB, k3, k4
         CM_vB = CM_vB_wrap(4)
     else:
-        print("Not fitting vB")
+        # print("Not fitting vB")
         K_init = 0.1, 0.1, 0.1, 0.1  # K1, k2, k3, k4
         CM_vB = CM_vB_wrap(4, fit_vB, vB_fixed)
 
