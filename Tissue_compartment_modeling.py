@@ -415,7 +415,7 @@ def patlak(Cp, t_p, Ct, t_t=0, INTERPOLATE=True, TIME_FRAMES=2.5):
             t_t, Time vector for tissue curve in seconds. If none, it equals t_p
             INTERPOLATE, Perform interpolation or not. Default is 2.5 second frames. Call with False if interpolation is done outslide this function.
     Output: Ki, Net influx, obtained as the slope of the linear fit of the steady-state part of the plot in the transformed space.
-            vB, Blood volume, obtained as the y-axis crossing from the same fit as Ki
+            v0, The y-axis intercept from the same fit as Ki
 
     To find the point at which steady state has occured, two linear models are fitted to the early and late parts of the normalized curve.
     The mean squared error (MSE) is calculated for each fit and summed. The break point is taken as the time where the minimum summed MSE is obtained.
@@ -517,7 +517,7 @@ def patlak(Cp, t_p, Ct, t_t=0, INTERPOLATE=True, TIME_FRAMES=2.5):
     # plt.show()
     # print(slope2_final)
 
-    return slope2_final, intercept2_final  # Returns: Ki and vB
+    return slope2_final, intercept2_final  # Returns: Ki and v0
 
 
 # %% Parametric (voxel-wise) PET Patlak model (lest squares method)
@@ -541,7 +541,7 @@ def param_patlak(
             BREAKPOINT,             Breakpoint in minutes. If set to a value > 0, the break point is fixed to this value. If set to 0, the break point is optimized.
             OPTIMIZE_BREAKPOINT,    If True, the break point is fixed to the value of BREAKPOINT. If False, the break point is optimized.
     Output: img_Ki,                 Parametric image of net influxes, obtained as the slope of the least squares linear fit of the steady-state part of the plot in the transformed space.
-            img_vB,                 Parametric image of blood volume, obtained as the y-axis crossing from the same fit as Ki
+            img_v0,                 Parametric image of v0, obtained as the y-axis intercept from the same fit as Ki
 
     """
 
@@ -647,9 +647,9 @@ def param_patlak(
         result1_bestfit = np.take_along_axis(result1_list, min_sse_idx, axis=0)
         result2_bestfit = np.take_along_axis(result2_list, min_sse_idx, axis=0)
 
-        # Extract Ki as slope and vB as intercept for each voxel
+        # Extract Ki as slope and v0 as intercept for each voxel
         Ki = result2_bestfit[:, :, 0].squeeze()
-        vB = result2_bestfit[:, :, 1].squeeze()
+        v0 = result2_bestfit[:, :, 1].squeeze()
 
     else:
         # Use fixed BREAKPOINT
@@ -663,12 +663,12 @@ def param_patlak(
             inv(np.dot(newX2, newX2.T)), np.dot(newX2, newY2.T)
         ).T  # Result is [slope, intercept]
 
-        # Extract Ki as slope and vB as intercept for each voxel
+        # Extract Ki as slope and v0 as intercept for each voxel
         Ki = result2[:, 0]
-        vB = result2[:, 1]
+        v0 = result2[:, 1]
 
     # Reshape to parametric 3D images
     img_Ki = np.reshape(Ki, (img.shape[1], img.shape[2], img.shape[3]))
-    img_vB = np.reshape(vB, (img.shape[1], img.shape[2], img.shape[3]))
+    img_v0 = np.reshape(v0, (img.shape[1], img.shape[2], img.shape[3]))
 
-    return img_Ki, img_vB
+    return img_Ki, img_v0
