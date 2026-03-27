@@ -310,24 +310,32 @@ def twoTCMrev(
 
 
 # %% Parametric (voxel-wise) reversible two-tissue compartment model (brute force method using a for loop)
-def param_twoTCMrev(Cp, img, t_p, INTERPOLATE=True, TIME_FRAMES=2.5, num_samples=100):
+def param_twoTCMrev(
+    Cp,
+    t_p,
+    img,
+    img_t=0,
+    INTERPOLATE=True,
+    TIME_FRAMES=2.5,
+):
     """
     Parametric (Voxel-wise) PET Reversible two tissue compartment model
     Input:  Cp,                     Plasma time-activity curve
-            img,                    Dynamic PET image containing all voxel tissue time-activity curves
+            img,                    Dynamic PET image containing all voxel tissue time-activity curves, shape (time, x, y, z)
             t_p,                    Time vector for plasma curve in seconds
             INTERPOLATE,            Perform interpolation or not. Default is 2.5 second frames. Call with False if interpolation is done outslide this function.
 
-    Output: img_Ki,                 Parametric image of net influxes, obtained as the slope of the least squares linear fit of the steady-state part of the plot in the transformed space.
-            img_vB,                 Parametric image of blood volume, obtained as the y-axis crossing from the same fit as Ki
+    Output: param_images,           Parametric images of K1, k2, vB, k3, k4.
 
     """
-    np.random.seed(42)
+
     # Flatten the spatial dimensions of img for processing
+    original_shape = img.shape
     tissue_curves = img.reshape(img.shape[0], -1).T  # Vectorized operation
 
     # Pre-allocate arrays for parameters
-    num_voxels = tissue_curves.shape[0]
+    # num_voxels = tissue_curves.shape[0]
+    num_samples = np.size(img[-1, :])
     num_params = 5  # K1, k2, vB, k3, k4
     params = np.zeros((num_samples, num_params))
     Kis = np.zeros(num_samples)
@@ -336,29 +344,45 @@ def param_twoTCMrev(Cp, img, t_p, INTERPOLATE=True, TIME_FRAMES=2.5, num_samples
     valid_voxels = np.mean(tissue_curves, axis=1) >= 0.2
     valid_indices = np.where(valid_voxels)[0]
 
-    sampled_indices = np.random.choice(valid_indices, size=num_samples, replace=False)
-    valid_indices = sampled_indices
-
-    # Process only valid voxels
-    for idx, i in enumerate(valid_indices):
-        (K1, k2, vB, k3, k4), Ki, _ = twoTCMrev(
+    # Process each voxel
+    for idx, current_curve in enumerate(tissue_curves):
+        print(f"Processing voxel {idx+1}/{num_samples}")
+        (K1, k2, vB, k3, k4), Ki, tissue_fit, mse = twoTCMrev(
             Cp,
             t_p,
-            tissue_curves[i, :],
+            current_curve,
+            # img_t,
             INTERPOLATE=INTERPOLATE,
             TIME_FRAMES=TIME_FRAMES,
         )
 
-        params[idx] = K1, k2, vB, k3, k4
+        params[idx] = [K1, k2, vB, k3, k4]
         Kis[idx] = Ki
 
+    K1_map = params[:, 0].reshape(
+        original_shape[1], original_shape[2], original_shape[3]
+    )
+    k2_map = params[:, 1].reshape(
+        original_shape[1], original_shape[2], original_shape[3]
+    )
+    vB_map = params[:, 2].reshape(
+        original_shape[1], original_shape[2], original_shape[3]
+    )
+    k3_map = params[:, 3].reshape(
+        original_shape[1], original_shape[2], original_shape[3]
+    )
+    k4_map = params[:, 4].reshape(
+        original_shape[1], original_shape[2], original_shape[3]
+    )
+    Ki_map = Kis.reshape(original_shape[1], original_shape[2], original_shape[3])
+
     param_images = {
-        "Ki": Kis,  # Directly use Kis array
-        "K1": params[:, 0],  # First column for K1
-        "k2": params[:, 1],  # Second column for k2
-        "vB": params[:, 2],  # Third column for vB
-        "k3": params[:, 3],  # Fourth column for k3
-        "k4": params[:, 4],  # Fifth column for k4
+        "K1": K1_map,
+        "k2": k2_map,
+        "vB": vB_map,
+        "k3": k3_map,
+        "k4": k4_map,
+        "Ki": Ki_map,
     }
     return param_images
 
