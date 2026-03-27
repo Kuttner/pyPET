@@ -310,11 +310,12 @@ def twoTCMrev(
 
 
 # %% Parametric (voxel-wise) reversible two-tissue compartment model (brute force method using a for loop)
-def param_twoTCMrev(
+def param_twoTCM(
     Cp,
     t_p,
     img,
     img_t=0,
+    model="4k",  # 3k or 4k
     INTERPOLATE=True,
     TIME_FRAMES=2.5,
 ):
@@ -323,6 +324,7 @@ def param_twoTCMrev(
     Input:  Cp,                     Plasma time-activity curve
             img,                    Dynamic PET image containing all voxel tissue time-activity curves, shape (time, x, y, z)
             t_p,                    Time vector for plasma curve in seconds
+            model,                  "4k" for reversible model with k4, "3k" for irreversible model with k4=0. Default is "4k".
             INTERPOLATE,            Perform interpolation or not. Default is 2.5 second frames. Call with False if interpolation is done outslide this function.
 
     Output: param_images,           Parametric images of K1, k2, vB, k3, k4.
@@ -336,7 +338,11 @@ def param_twoTCMrev(
     # Pre-allocate arrays for parameters
     # num_voxels = tissue_curves.shape[0]
     num_samples = np.size(img[-1, :])
-    num_params = 5  # K1, k2, vB, k3, k4
+    if model == "4k":
+        num_params = 5  # K1, k2, vB, k3, k4
+    elif model == "3k":
+        num_params = 4  # K1, k2, vB k3
+
     params = np.zeros((num_samples, num_params))
     Kis = np.zeros(num_samples)
 
@@ -347,16 +353,29 @@ def param_twoTCMrev(
     # Process each voxel
     for idx, current_curve in enumerate(tissue_curves):
         print(f"Processing voxel {idx+1}/{num_samples}")
-        (K1, k2, vB, k3, k4), Ki, tissue_fit, mse = twoTCMrev(
-            Cp,
-            t_p,
-            current_curve,
-            # img_t,
-            INTERPOLATE=INTERPOLATE,
-            TIME_FRAMES=TIME_FRAMES,
-        )
+        if model == "4k":
+            (K1, k2, vB, k3, k4), Ki, tissue_fit, mse = twoTCMrev(
+                Cp,
+                t_p,
+                current_curve,
+                # img_t,
+                INTERPOLATE=INTERPOLATE,
+                TIME_FRAMES=TIME_FRAMES,
+            )
+        elif model == "3k":
+            (K1, k2, vB, k3), Ki, tissue_fit, mse = twoTCMirrev(
+                Cp,
+                t_p,
+                current_curve,
+                # img_t,
+                INTERPOLATE=INTERPOLATE,
+                TIME_FRAMES=TIME_FRAMES,
+            )
 
-        params[idx] = [K1, k2, vB, k3, k4]
+        if model == "4k":
+            params[idx] = [K1, k2, vB, k3, k4]
+        elif model == "3k":
+            params[idx] = [K1, k2, vB, k3]
         Kis[idx] = Ki
 
     K1_map = params[:, 0].reshape(
@@ -371,9 +390,12 @@ def param_twoTCMrev(
     k3_map = params[:, 3].reshape(
         original_shape[1], original_shape[2], original_shape[3]
     )
-    k4_map = params[:, 4].reshape(
-        original_shape[1], original_shape[2], original_shape[3]
-    )
+    if model == "4k":
+        k4_map = params[:, 4].reshape(
+            original_shape[1], original_shape[2], original_shape[3]
+        )
+    elif model == "3k":
+        k4_map = np.zeros_like(k3_map)  # Placeholder for k4 in 3k model
     Ki_map = Kis.reshape(original_shape[1], original_shape[2], original_shape[3])
 
     param_images = {
