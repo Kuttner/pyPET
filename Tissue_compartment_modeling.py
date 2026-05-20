@@ -98,13 +98,13 @@ def oneTCM(
         )
 
     # Interpolate back to original spacing
-    fit = np.interp(t_p, t_int, fit_int)
+    fit = np.interp(t_t, t_int, fit_int)
 
     # K_fit_pred = curve_fit(CM_vB, (Cp_pred_int, t_int), Ct_int, method='trf', bounds=(0, 10), p0=K_init)
     return (
         K_fit[0],
         fit,
-        mse_func(Ct_int, fit_int),
+        mse_func(Ct, fit),
     )  # Returns: (K1, k2, vB), tissue_fit, mse (when fit_vB=True)
     # Returns: (K1, k2), tissue_fit, mse (when fit_v
 
@@ -196,7 +196,7 @@ def twoTCMirrev(
         )
 
     # Interpolate back to original spacing
-    fit = np.interp(t_p, t_int, fit_int)
+    fit = np.interp(t_t, t_int, fit_int)
 
     # Calculate net influx rate constant
     if fit_vB:
@@ -209,7 +209,7 @@ def twoTCMirrev(
         K_fit[0],
         Ki,
         fit,
-        mse_func(Ct_int, fit_int),
+        mse_func(Ct, fit),
     )  # Returns: (K1, k2, vB, k3), Ki, tissue_fit, mse (when fit_vB=True)
     # Returns: (K1, k2, k3), Ki, tissue_fit, mse (when fit_vB=False)
 
@@ -291,7 +291,7 @@ def twoTCMrev(
         )
 
     # Interpolate back to original spacing
-    fit = np.interp(t_p, t_int, fit_int)
+    fit = np.interp(t_t, t_int, fit_int)
 
     # Calculate net influx rate constant
     if fit_vB:
@@ -304,7 +304,7 @@ def twoTCMrev(
         K_fit[0],
         Ki,
         fit,
-        mse_func(Ct_int, fit_int),
+        mse_func(Ct, fit),
     )  # Returns: (K1, k2, vB, k3, k4), Ki, tissue_fit, mse (when fit_vB=True)
     # Returns: (K1, k2, k3, k4), Ki, tissue_fit, mse (when fit_vB=False)
 
